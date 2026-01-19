@@ -33,7 +33,7 @@ aws sso login --profile data
 ### 1) Install dbt + Athena adapter
 
 ```bash
-python -m pip install dbt-core dbt-athena-community
+python -m pip install -r requirements.txt
 dbt --version
 ```
 
