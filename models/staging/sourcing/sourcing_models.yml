@@ -1,0 +1,43 @@
+version: 2
+
+models:
+  - name: stg_segments
+    description: "Staging segments table from the Iceberg source."
+    columns:
+      - name: id
+        description: "Primary key for the segment."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+          - unique:
+              config:
+                severity: warn
+
+  - name: stg_cards
+    description: "Staging cards table from the Iceberg source."
+    columns:
+      - name: id
+        description: "Primary key for the card."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+          - unique:
+              config:
+                severity: warn
+
+  - name: stg_card_segment
+    description: "Staging card_segment table from the Iceberg source."
+    columns:
+      - name: segment_id
+        tests:
+          - not_null:
+              config:
+                severity: warn
+      - name: card_id
+        tests:
+          - not_null:
+              config:
+                severity: warn
+

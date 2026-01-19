@@ -1,0 +1,24 @@
+dbt_athena_poc:
+  target: data
+  outputs:
+    data:
+      type: athena
+      aws_profile_name: data
+      region_name: eu-central-1
+      work_group: primary
+      database: awsdatacatalog
+
+      # Glue database where dbt creates relations (views/tables)
+      schema: staging_factorypal_datalake_sourcing
+
+      # Athena query results output location
+      s3_staging_dir: s3://factorypal-datalake-athena/athena-results/
+
+      # Where dbt writes Iceberg table data files (S3)
+      s3_data_dir: s3://factorypal-datalake-sourcing-staging/iceberg-tables/staging_factorypal_datalake_sourcing.db/
+      # Control how dbt-athena builds the final S3 LOCATION under s3_data_dir.
+      # table_unique => <s3_data_dir>/<table_name>/<uuid>
+      s3_data_naming: table_unique
+
+      threads: 2
+

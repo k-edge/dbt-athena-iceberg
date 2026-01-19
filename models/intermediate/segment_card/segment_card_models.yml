@@ -1,0 +1,164 @@
+version: 2
+
+models:
+  - name: int_segment_card
+    description: "Denormalized segment-card dataset (Iceberg incremental table) built from segments + card_segment + cards. One row per segment-card."
+    tests:
+      - expect_equal_columns:
+          arguments:
+            left_column: card_line_id
+            right_column: segment_line_id
+            where: "card_line_id is not null"
+          config:
+            severity: warn
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns: ['map_segment_id', 'map_card_id']
+          config:
+            severity: warn
+    columns:
+      # segments__public__segments (prefixed)
+      - name: segment_database_name
+        data_type: string
+      - name: segment_schema_name
+        data_type: string
+      - name: segment_table_name
+        data_type: string
+      - name: segment_operation_timestamp
+        data_type: timestamp
+      - name: segment_operation
+        data_type: string
+      - name: segment_id
+        data_type: string
+        description: "Primary key of the segment record."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+      - name: segment_line_id
+        data_type: string
+        description: "Manufacturing line identifier (partition key)."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+      - name: segment_level
+        data_type: integer
+      - name: segment_start_time
+        data_type: bigint
+      - name: segment_end_time
+        data_type: bigint
+      - name: segment_data
+        data_type: string
+      - name: segment_created_at
+        data_type: timestamp
+      - name: segment_updated_at
+        data_type: timestamp
+      - name: segment_average_speed
+        data_type: double
+      - name: segment_loss
+        data_type: double
+      - name: segment_anomaly
+        data_type: double
+      - name: segment_marked
+        data_type: boolean
+      - name: segment_marked_timestamp
+        data_type: timestamp
+      - name: segment_recalculating
+        data_type: boolean
+      - name: segment_machine_id
+        data_type: string
+      - name: segment_artificial
+        data_type: boolean
+      - name: segment_auto_documented
+        data_type: boolean
+      - name: segment_section_id
+        data_type: string
+      - name: segment_is_manual_split
+        data_type: boolean
+
+      # segments__public__card_segment (prefixed)
+      - name: map_database_name
+        data_type: string
+      - name: map_schema_name
+        data_type: string
+      - name: map_table_name
+        data_type: string
+      - name: map_operation_timestamp
+        data_type: timestamp
+      - name: map_operation
+        data_type: string
+      - name: map_segment_id
+        data_type: string
+        description: "FK to segment: `segments.id`."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+      - name: map_card_id
+        data_type: string
+        description: "FK to card: `cards.id`."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+
+      # segments__public__cards (prefixed)
+      - name: card_database_name
+        data_type: string
+      - name: card_schema_name
+        data_type: string
+      - name: card_table_name
+        data_type: string
+      - name: card_operation_timestamp
+        data_type: timestamp
+      - name: card_operation
+        data_type: string
+      - name: card_id_from_cards
+        data_type: string
+        description: "Primary key of the card record (`cards.id`)."
+      - name: card_details
+        data_type: string
+      - name: card_machine_type
+        data_type: string
+      - name: card_created_at
+        data_type: timestamp
+      - name: card_updated_at
+        data_type: timestamp
+      - name: card_complete
+        data_type: boolean
+      - name: card_root_cause
+        data_type: string
+      - name: card_machine
+        data_type: string
+      - name: card_data
+        data_type: string
+      - name: card_machine_group
+        data_type: string
+      - name: card_start_time
+        data_type: bigint
+      - name: card_end_time
+        data_type: bigint
+      - name: card_marked_timestamp
+        data_type: timestamp
+      - name: card_reported_time
+        data_type: timestamp
+      - name: card_status
+        data_type: string
+      - name: card_maintenance
+        data_type: boolean
+      - name: card_planned
+        data_type: boolean
+      - name: card_line_id
+        data_type: string
+      - name: card_section_id
+        data_type: string
+
+      # partition helper
+      - name: last_updated_at
+        data_type: timestamp
+        description: "Watermark used for incremental processing: `greatest(segment_updated_at, card_updated_at)`."
+        tests:
+          - not_null:
+              config:
+                severity: warn

@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: sourcing
+    description: "Iceberg sourcing tables in Glue Catalog (staging)."
+    database: awsdatacatalog
+    schema: staging_factorypal_datalake_sourcing
+    tables:
+      - name: segments__public__segments
+        description: "Segments CDC table (Iceberg)."
+      - name: segments__public__cards
+        description: "Cards CDC table (Iceberg)."
+      - name: segments__public__card_segment
+        description: "Segment-to-card mapping CDC table (Iceberg)."
+
