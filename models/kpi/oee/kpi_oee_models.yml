@@ -1,0 +1,402 @@
+version: 2
+
+models:
+  - name: den_kpi_oee_rew_availability
+    description: |
+      OEE (Overall Equipment Effectiveness) Availability KPI for REW (Rewinder) machines.
+      
+      Calculates availability metrics per shift by analyzing:
+      - Downtime segments and their documentation (cards)
+      - Shift boundaries and segment splits across shifts
+      - Machine stop flags (upstream, downstream, material)
+      - Missing data periods
+      
+      Designed for hourly runs with an 8-hour lookback window.
+      
+      **Airflow variables:**
+      - `previous_run`: Start of processing window (e.g., '2026-01-23 00:00:00')
+      - `current_run`: End of processing window (e.g., '2026-01-23 08:00:00')
+      - `customer_id`: Optional filter for specific customer
+      - `line_id`: Optional filter for specific line
+      - `incremental_merge_lookback_hours`: Hours to look back for merge predicates (default: 8)
+      
+      **Example dbt command:**
+      ```bash
+      dbt run --select den_kpi_oee_rew_availability --vars '{
+        "previous_run": "2026-01-23 00:00:00",
+        "current_run": "2026-01-23 08:00:00"
+      }'
+      ```
+
+    columns:
+      - name: customer_id
+        description: "Customer UUID."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+
+      - name: line_id
+        description: "Production line UUID."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+
+      - name: section_uuid
+        description: "Section UUID within the line."
+
+      - name: shift_uuid
+        description: "Shift UUID from shift history."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+
+      - name: level
+        description: "Segment level (0 = DOWNTIME, 1 = SPEED_LOSS)."
+
+      - name: loss_type
+        description: "Type of loss: 'DOWNTIME' or 'SPEED_LOSS'."
+
+      - name: shift_start_at
+        description: "Shift start timestamp."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+
+      - name: shift_end_at
+        description: "Shift end timestamp."
+
+      - name: shift_duration_mins
+        description: "Total shift duration in minutes."
+
+      - name: down_mins
+        description: "Total downtime minutes in the shift."
+
+      - name: downstream_mins
+        description: "Downtime minutes caused by downstream issues."
+
+      - name: upstream_mins
+        description: "Downtime minutes caused by upstream issues."
+
+      - name: material_mins
+        description: "Downtime minutes caused by material issues."
+
+      - name: fp_key
+        description: "FactoryPal key for no-data verification (e.g., 'speed')."
+
+      - name: total_minutes
+        description: "Total minutes expected in the shift."
+
+      - name: minutes_with_data
+        description: "Minutes with actual data in the shift."
+
+      - name: missing_minutes
+        description: "Minutes with missing data."
+
+      - name: downtime_threshold_value
+        description: "Threshold value for determining downtime (from kpi_machine_config)."
+
+      - name: stat
+        description: "Status flag: 'OK' for active, 'DEL' for deleted segments."
+
+      - name: availability
+        description: "Calculated availability percentage (0-100)."
+
+      - name: dbt_updated_at
+        description: "Timestamp when dbt last updated this row."
+
+    tests:
+      - unique_combination_of_columns:
+          combination_of_columns:
+            - customer_id
+            - line_id
+            - shift_uuid
+            - section_uuid
+            - level
+            - shift_start_at
+          config:
+            severity: warn
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Bundler Performance & Quality KPI
+  # ─────────────────────────────────────────────────────────────────────────────
+  - name: den_kpi_bundler_perf_quality
+    description: |
+      Performance and Quality KPI for Bundler (BU) machines.
+      
+      Calculates per-shift metrics:
+      - **Performance** = produced units / (target_speed × runtime)
+      - **Quality** = 1.0 (placeholder for future implementation)
+      
+      Uses `ProducedNotReset` counters at shift start/end to compute delta production.
+      
+      **Airflow variables:**
+      - `previous_run`: Start of processing window
+      - `current_run`: End of processing window
+      - `customer_id`: Optional filter for specific customer
+      - `line_id`: Optional filter for specific line
+      
+      **Example dbt command:**
+      ```bash
+      dbt run --select den_kpi_bundler_perf_quality --vars '{
+        "previous_run": "2026-01-23 00:00:00",
+        "current_run": "2026-01-23 08:00:00"
+      }'
+      ```
+
+    columns:
+      - name: line_uuid
+        description: "Production line UUID."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+
+      - name: shift_uuid
+        description: "Shift UUID from shift history."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+
+      - name: customer_uuid
+        description: "Customer UUID."
+
+      - name: shift_start
+        description: "Shift start timestamp."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+
+      - name: shift_end
+        description: "Shift end timestamp (capped at current_run if ongoing)."
+
+      - name: target_speed_bu
+        description: "Target speed for bundler from PresetSpeed parameter."
+
+      - name: default_target_speed
+        description: "Default target speed from kpi_machine_config (used if target_speed_bu is null)."
+
+      - name: target_speed_used
+        description: "Actual target speed used for calculation (coalesce of target_speed_bu and default)."
+
+      - name: delta_produced_bu
+        description: "Number of bags produced during the shift (end counter - start counter)."
+
+      - name: runtime_min
+        description: "Shift runtime in minutes."
+
+      - name: performance
+        description: "Performance ratio: delta_produced / (target_speed × runtime). Range 0-1+."
+
+      - name: quality
+        description: "Quality ratio (currently hardcoded to 1.0)."
+
+    tests:
+      - unique_combination_of_columns:
+          combination_of_columns:
+            - line_uuid
+            - shift_uuid
+            - shift_start
+          config:
+            severity: warn
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Rewinder (REW) Performance & Quality KPI
+  # ─────────────────────────────────────────────────────────────────────────────
+  - name: den_kpi_rew_perf_quality
+    description: |
+      Performance and Quality KPI for Rewinder (REW) machines.
+      
+      Calculates per-shift metrics:
+      - **Performance** = paper_unwound / (target_speed × runtime)
+      - **Quality** = (paper_unwound - paper_unwound_rejected) / paper_unwound
+      
+      Uses counter deltas with uint32 rollover handling (max 4294967295).
+      Paper unwound = delta_produced × sheet_number × perforation_length.
+      
+      **Airflow variables:**
+      - `previous_run`: Start of processing window
+      - `current_run`: End of processing window
+      - `customer_id`: Optional filter for specific customer
+      - `line_id`: Optional filter for specific line
+      
+      **Example dbt command:**
+      ```bash
+      dbt run --select den_kpi_rew_perf_quality --vars '{
+        "previous_run": "2026-01-23 00:00:00",
+        "current_run": "2026-01-23 08:00:00"
+      }'
+      ```
+
+    columns:
+      - name: line_uuid
+        description: "Production line UUID."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+
+      - name: shift_uuid
+        description: "Shift UUID from shift history."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+
+      - name: shift_start
+        description: "Shift start timestamp."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+
+      - name: shift_end
+        description: "Shift end timestamp (capped at current_run if ongoing)."
+
+      - name: target_speed_mpm
+        description: "Target speed in meters per minute from 'speed' OEM key."
+
+      - name: default_target_speed
+        description: "Default target speed from kpi_machine_config (used if target_speed_mpm is null)."
+
+      - name: target_speed_used
+        description: "Actual target speed used for calculation."
+
+      - name: delta_produced
+        description: "Delta of ProducedNotReset counter (with rollover handling)."
+
+      - name: delta_rejected
+        description: "Delta of RejectedNotReset counter (with rollover handling)."
+
+      - name: sheet_number
+        description: "Number of sheets per log from SheetsNumber parameter."
+
+      - name: perf_len_m
+        description: "Perforation length in meters (PerforationLenght / 100, default 2.1m)."
+
+      - name: paper_unwound
+        description: "Total paper unwound: delta_produced × sheet_number × perf_len_m."
+
+      - name: paper_unwound_rejected
+        description: "Rejected paper unwound: delta_rejected × sheet_number × perf_len_m."
+
+      - name: performance
+        description: "Performance ratio: paper_unwound / (target_speed × runtime). Range 0-1+."
+
+      - name: quality
+        description: "Quality ratio: (paper_unwound - paper_unwound_rejected) / paper_unwound. Range 0-1."
+
+      - name: runtime_min
+        description: "Shift runtime in minutes."
+
+    tests:
+      - unique_combination_of_columns:
+          combination_of_columns:
+            - line_uuid
+            - shift_uuid
+            - shift_start
+          config:
+            severity: warn
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Wrapper (WR) Performance & Quality KPI
+  # ─────────────────────────────────────────────────────────────────────────────
+  - name: den_kpi_wrapper_perf_quality
+    description: |
+      Performance and Quality KPI for Wrapper (WR) machines.
+      
+      Calculates per-shift metrics:
+      - **Performance** = delta_produced_wr / (target_speed × runtime)
+      - **Quality** = bundler_produced_weighted / delta_produced_wr
+      
+      Combines Wrapper (WR) and Bundler (BU) production counters.
+      Quality measures the ratio of bundler output (weighted by i16kv2m) to wrapper output.
+      
+      **Airflow variables:**
+      - `previous_run`: Start of processing window
+      - `current_run`: End of processing window
+      - `customer_id`: Optional filter for specific customer
+      - `line_id`: Optional filter for specific line
+      
+      **Example dbt command:**
+      ```bash
+      dbt run --select den_kpi_wrapper_perf_quality --vars '{
+        "previous_run": "2026-01-23 00:00:00",
+        "current_run": "2026-01-23 08:00:00"
+      }'
+      ```
+
+    columns:
+      - name: line_uuid
+        description: "Production line UUID."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+
+      - name: shift_uuid
+        description: "Shift UUID from shift history."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+
+      - name: customer_uuid
+        description: "Customer UUID."
+
+      - name: shift_start
+        description: "Shift start timestamp."
+        tests:
+          - not_null:
+              config:
+                severity: warn
+
+      - name: shift_end
+        description: "Shift end timestamp (capped at current_run if ongoing)."
+
+      - name: target_speed_wr
+        description: "Target speed for wrapper from PresetSpeed parameter."
+
+      - name: default_target_speed
+        description: "Default target speed from kpi_machine_config (used if target_speed_wr is null)."
+
+      - name: target_speed_used
+        description: "Actual target speed used for calculation."
+
+      - name: delta_produced_wr
+        description: "Wrapper production delta (packs produced)."
+
+      - name: delta_produced_bundler
+        description: "Bundler production delta (bags produced)."
+
+      - name: i16kv2m
+        description: "RollIntoProduct ratio (bags per pack conversion factor)."
+
+      - name: runtime_min
+        description: "Shift runtime in minutes."
+
+      - name: bundler_produced_weighted
+        description: "Bundler production weighted by i16kv2m."
+
+      - name: total_produced_shift
+        description: "Total wrapper production for the shift."
+
+      - name: quality
+        description: "Quality ratio: bundler_produced_weighted / delta_produced_wr. Default 1.0 if no bundler data."
+
+      - name: performance
+        description: "Performance ratio: delta_produced_wr / (target_speed × runtime). Range 0-1+."
+
+    tests:
+      - unique_combination_of_columns:
+          combination_of_columns:
+            - line_uuid
+            - shift_uuid
+            - shift_start
+          config:
+            severity: warn

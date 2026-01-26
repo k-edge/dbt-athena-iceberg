@@ -1,5 +1,0 @@
-version: 2
-
-models:
-  - name: mart_denorm_segment_card
-    description: "Mart view: selects from `int_segment_card` (the incremental Iceberg table)."

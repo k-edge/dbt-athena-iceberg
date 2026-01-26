@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: int_segment_card
+  - name: den_segment_card
     description: "Denormalized segment-card dataset (Iceberg incremental table) built from segments + card_segment + cards. One row per segment-card."
     tests:
       - expect_equal_columns:
@@ -17,7 +17,7 @@ models:
           config:
             severity: warn
     columns:
-      # segments__public__segments (prefixed)
+      # segments__public__segments
       - name: segment_database_name
         data_type: string
       - name: segment_schema_name
@@ -77,7 +77,7 @@ models:
       - name: segment_is_manual_split
         data_type: boolean
 
-      # segments__public__card_segment (prefixed)
+      # segments__public__card_segment
       - name: map_database_name
         data_type: string
       - name: map_schema_name
@@ -103,7 +103,7 @@ models:
               config:
                 severity: warn
 
-      # segments__public__cards (prefixed)
+      # segments__public__cards
       - name: card_database_name
         data_type: string
       - name: card_schema_name
@@ -154,7 +154,7 @@ models:
       - name: card_section_id
         data_type: string
 
-      # partition helper
+      # partition helper / watermark
       - name: last_updated_at
         data_type: timestamp
         description: "Watermark used for incremental processing: `greatest(segment_updated_at, card_updated_at)`."
@@ -162,3 +162,4 @@ models:
           - not_null:
               config:
                 severity: warn
+

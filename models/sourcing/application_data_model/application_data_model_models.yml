@@ -1,8 +1,8 @@
 version: 2
 
 models:
-  - name: stg_segments
-    description: "Staging segments table from the Iceberg source."
+  - name: src_segments
+    description: "View on the Iceberg source table: segments."
     columns:
       - name: id
         description: "Primary key for the segment."
@@ -14,8 +14,8 @@ models:
               config:
                 severity: warn
 
-  - name: stg_cards
-    description: "Staging cards table from the Iceberg source."
+  - name: src_cards
+    description: "View on the Iceberg source table: cards."
     columns:
       - name: id
         description: "Primary key for the card."
@@ -27,8 +27,8 @@ models:
               config:
                 severity: warn
 
-  - name: stg_card_segment
-    description: "Staging card_segment table from the Iceberg source."
+  - name: src_card_segment
+    description: "View on the Iceberg source table: card_segment (segment-to-card mapping)."
     columns:
       - name: segment_id
         tests:
@@ -40,4 +40,3 @@ models:
           - not_null:
               config:
                 severity: warn
-

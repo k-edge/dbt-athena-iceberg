@@ -6,9 +6,8 @@ dbt project using the **dbt Athena adapter** against AWS Data staging (Glue + S3
 
 This project builds a **denormalized segment-card** dataset from three existing Iceberg “sourcing” tables in Athena/Glue.
 
-- **Staging**: views on sources (`stg_*`)
-- **Intermediate**: physical **incremental Iceberg table** (`int_segment_card`)
-- **Marts**: views/tables for consumption (`mart_*`)
+- **Application data model**: views on sources (`src_*`) that represent the **latest record per key** (CDC-aware) and filter delete operations
+- **Denormalised data model**: physical **incremental Iceberg tables** (`den_*`)
 
 ## Source tables (Glue / Athena)
 
@@ -82,19 +81,19 @@ dbt build --profiles-dir . --target data
 Build only the denormalized outputs:
 
 ```bash
-dbt run --profiles-dir . --target data --select int_segment_card mart_denorm_segment_card
+dbt build --profiles-dir . --target data --select +den_segment_card
 ```
 
 Limit rows for development/testing:
 
 ```bash
-dbt run --profiles-dir . --target data --select int_segment_card --vars '{row_limit: 200}'
+dbt build --profiles-dir . --target data --select +den_segment_card --vars '{row_limit: 200}'
 ```
 
 Tune incremental merge scan window:
 
 ```bash
-dbt run --profiles-dir . --target data --select int_segment_card --vars '{incremental_merge_lookback_days: 14}'
+dbt build --profiles-dir . --target data --select +den_segment_card --vars '{incremental_merge_lookback_days: 14}'
 ```
 
 ## dbt docs

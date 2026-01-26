@@ -1,0 +1,45 @@
+version: 2
+
+sources:
+  - name: kpi_oee
+    description: "Source tables and views for OEE (Overall Equipment Effectiveness) KPI calculations."
+    database: awsdatacatalog
+    schema: staging_factorypal_datalake_sourcing
+    tables:
+      # ─────────────────────────────────────────────────────────────────────────
+      # Views (existing Athena views)
+      # ─────────────────────────────────────────────────────────────────────────
+      - name: vw_smoothoperator_config_lines
+        description: "Configuration view for line/customer mapping."
+
+      - name: vw_smoothoperator_operations_shift_history
+        description: "Shift history with start/end times per line."
+
+      - name: vw_segments_public_segments
+        description: "Segments view (downtime/speed-loss events)."
+
+      - name: vw_segments_public_cards
+        description: "Cards view (documentation for segments)."
+
+      - name: vw_segments_public_card_segment
+        description: "Mapping between segments and cards."
+
+      - name: vw_kpi_shift_no_data_verification
+        description: "View to identify missing data periods per shift."
+
+      # ─────────────────────────────────────────────────────────────────────────
+      # Tables (Iceberg/Glue tables)
+      # ─────────────────────────────────────────────────────────────────────────
+      - name: kpi_machine_config
+        description: "Machine configuration table with threshold values by asset type."
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Production schema sources
+  # ─────────────────────────────────────────────────────────────────────────────
+  - name: kpi_oee_production
+    description: "Production layer sources for OEE KPI calculations."
+    database: awsdatacatalog
+    schema: production_factorypal_datalake_sourcing
+    tables:
+      - name: production_ingestion_aggregated_machine_parameter
+        description: "Aggregated machine parameters with OEM keys and sample values (production schema)."

@@ -12,4 +12,6 @@ sources:
         description: "Cards CDC table (Iceberg)."
       - name: segments__public__card_segment
         description: "Segment-to-card mapping CDC table (Iceberg)."
+      - name: test_dbt_source
+        description: "Small test Iceberg table for validating dbt incremental behavior."
 
